@@ -85,13 +85,13 @@ public class Main {
         boolean isType = false;
         boolean sentryDate = false;
 
-        for (int i = 1; i <= numberOfRows; i++) {
+        for (int i = 0; i < numberOfRows; i++) {
 
             List<String> row = new ArrayList<>();
             String res = "";
 
             for (int j = 0; j < numCol; j++) {
-                switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "")) {
+                switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "").replace("+d", "")) {
                     case "string":
                         if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
                             row.add(nulls[nullCount]);
@@ -117,11 +117,11 @@ public class Main {
                             isNulling = true;
                         } else if (nullCount > 5 && !types[j].contains("+n")) {
                             nullCount = 0;
-                            String a = types[j] + "+n";
-                            types[j] = a;
+                            types[j] = types[j] + "+n";
                             isNulling = false;
                             res = testNumbers(lens[j], String.valueOf(i), false);
                             res += i;
+                            row.add(addDoubleQoutes(res));
                             res = "";
                         } else {
                             if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
@@ -152,23 +152,26 @@ public class Main {
                             isNulling = true;
                         } else if (nullCount > 5 && !types[j].contains("+n")) {
                             nullCount = 0;
-                            String a = types[j] + "+n";
-                            types[j] = a;
+                            types[j] = types[j] + "+n";
                             isNulling = false;
                             row.add(randomDate());
                         } else {
-//                            if ((types[j].contains("+o") || types[j].contains("+n")) && sentryDate == false) {
-//                                row.add(errorDate[dateCount]);
-//                                dateCount++;
-//                                sentryDate = true;
-//                            } else if (dateCount > errorDate.length  && !types[j].contains("+d")) {
-//                                dateCount = 0;
-////                                types[j] = types[j] + "+d";
-//                                sentryDate = false;
-//                                row.add(randomDate());
-//                            } else {
-                            row.add(randomDate());
-//                            }
+                            //not good
+                            if (Arrays.stream(types).filter(s -> s.contains("int")).allMatch(s -> s.contains("+ab")) && dateCount < errorDate.length && !isType) {
+                                row.add(addDoubleQoutes(errorDate[dateCount]));
+                                dateCount++;
+                            } else if(Arrays.stream(types).noneMatch(s -> s.contains("int")) && (Arrays.stream(types).filter(s -> s.contains("string")).findAny().isPresent() && Arrays.stream(types).filter(s -> s.contains("string")).allMatch(s -> s.contains("+o"))) && dateCount < errorDate.length && !isType) {
+                                row.add(addDoubleQoutes(errorDate[dateCount]));
+                                dateCount++;
+                            }
+                            else if (dateCount > errorDate.length - 1 && !types[j].contains("+d")) {
+                                dateCount = 0;
+                                types[j] = types[j] + "+d";
+                                sentryDate = false;
+                                row.add(randomDate());
+                            } else {
+                                row.add(randomDate());
+                            }
                         }
                         break;
                     case "timestamp":
@@ -177,8 +180,7 @@ public class Main {
                             isNulling = true;
                         } else if (nullCount > 5 && !types[j].contains("+n")) {
                             nullCount = 0;
-                            String a = types[j] + "+n";
-                            types[j] = a;
+                            types[j] = types[j] + "+n";
                             isNulling = false;
                             row.add(randomDateTime());
                         } else {
@@ -291,8 +293,7 @@ public class Main {
         long endEpochDay = endDate.toEpochDay();
         long randomEpochDay = ThreadLocalRandom.current().nextLong(startEpochDay, endEpochDay);
 
-//        return addDoubleQoutes(LocalDate.ofEpochDay(randomEpochDay).toString());
-        return "ddddddddd";
+        return addDoubleQoutes(LocalDate.ofEpochDay(randomEpochDay).toString());
     }
 
     public static String addDoubleQoutes(String text) {
