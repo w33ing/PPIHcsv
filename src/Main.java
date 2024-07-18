@@ -22,6 +22,12 @@ public class Main {
     };
 
     private static String[] types;
+    private static boolean null_check = false;
+    private static boolean length_check = false;
+    private static boolean type_check = false;
+    private static boolean date_check = false;
+    private static boolean time_check = false;
+
 
     public Main() {
         headers = new ArrayList<>();
@@ -75,7 +81,6 @@ public class Main {
         int numberOfRows = scanner.nextInt();
         scanner.nextLine();  // Consume the newline
 
-        long numbers = 0;
         int nullCount = 0;
         int dateCount = 0;
         int timeCount = 0;
@@ -83,7 +88,6 @@ public class Main {
         boolean isNulling = false;
         boolean isMaxing = false;
         boolean isType = false;
-        boolean sentryDate = false;
 
         for (int i = 0; i < numberOfRows; i++) {
 
@@ -156,22 +160,17 @@ public class Main {
                             isNulling = false;
                             row.add(randomDate());
                         } else {
-                            //not good
-                            if (Arrays.stream(types).filter(s -> s.contains("int")).allMatch(s -> s.contains("+ab")) && dateCount < errorDate.length && !isType) {
+                            if(null_check && length_check && type_check && dateCount < errorDate.length){
                                 row.add(addDoubleQoutes(errorDate[dateCount]));
                                 dateCount++;
-                            } else if(Arrays.stream(types).noneMatch(s -> s.contains("int")) && (Arrays.stream(types).filter(s -> s.contains("string")).findAny().isPresent() && Arrays.stream(types).filter(s -> s.contains("string")).allMatch(s -> s.contains("+o"))) && dateCount < errorDate.length && !isType) {
-                                row.add(addDoubleQoutes(errorDate[dateCount]));
-                                dateCount++;
-                            }
-                            else if (dateCount > errorDate.length - 1 && !types[j].contains("+d")) {
-                                dateCount = 0;
-                                types[j] = types[j] + "+d";
-                                sentryDate = false;
-                                row.add(randomDate());
-                            } else {
+                            } else{
                                 row.add(randomDate());
                             }
+
+                             if(dateCount > errorDate.length - 1 && date_check == false){
+                                    types[j] = types[j] + "+d";
+                            }
+                            
                         }
                         break;
                     case "timestamp":
@@ -184,18 +183,23 @@ public class Main {
                             isNulling = false;
                             row.add(randomDateTime());
                         } else {
+                            if(null_check && length_check && type_check && date_check && timeCount < errorTimestamp.length){
+                                row.add(addDoubleQoutes(errorTimestamp[timeCount]));
+                                timeCount++;
+                            }else 
                             row.add(randomDateTime());
                         }
                         break;
                 }
-                System.out.println(types[j]);
             }
 
             nullCount++;
             isNulling = false;
             isMaxing = false;
             isType = false;
+            checking();
             generator.addRow(row);
+
 
         }
 
@@ -208,8 +212,50 @@ public class Main {
         } catch (IOException e) {
             System.out.println("Error writing to file: " + e.getMessage());
         }
-
+        System.out.println(null_check+": null");
+        System.out.println(type_check+": type");
+        System.out.println(date_check+": date");
+        System.out.println(length_check+": len");
+        for(String s : types){
+            System.out.println(s);
+        }
         scanner.close();
+    }
+
+    public static void checking(){
+        
+        if(Arrays.stream(types).allMatch(s -> s.contains("+n"))){
+            null_check = true;
+        } 
+
+        boolean containsStringOrInt = Arrays.stream(types)
+        .anyMatch(s -> s.contains("string") || s.contains("int"));
+
+        if (containsStringOrInt) {
+            boolean allStringAndIntContainO = Arrays.stream(types)
+                    .filter(s -> s.contains("string") || s.contains("int"))
+                    .allMatch(s -> s.contains("+o"));
+
+            if (allStringAndIntContainO) {
+                length_check = true;
+            }
+        }
+
+        if(Arrays.stream(types).anyMatch(s -> s.contains("int")) && Arrays.stream(types)
+                .filter(s -> s.contains("int"))
+                .allMatch(s -> s.contains("+ab"))){
+            type_check = true;
+        } else if (Arrays.stream(types)
+        .noneMatch(s -> s.contains("int"))){
+            type_check = true;
+        }
+
+        if(Arrays.stream(types).anyMatch(s -> s.contains("date")) && Arrays.stream(types)
+        .filter(s -> s.contains("date"))
+        .allMatch(s -> s.contains("+d"))){
+            date_check = true;
+        }
+
     }
 
     public static boolean checkAbnormality(String d) {
