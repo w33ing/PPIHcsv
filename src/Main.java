@@ -77,9 +77,10 @@ public class Main {
 
         generator.setHeaders(headers);
 
-        System.out.print("Enter the number of rows: ");
-        int numberOfRows = scanner.nextInt();
-        scanner.nextLine();  // Consume the newline
+        //do not delete for now
+        // System.out.print("Enter the number of rows: ");
+        // int numberOfRows = scanner.nextInt();
+        // scanner.nextLine();  // Consume the newline
 
         int nullCount = 0;
         int dateCount = 0;
@@ -89,7 +90,7 @@ public class Main {
         boolean isMaxing = false;
         boolean isType = false;
 
-        for (int i = 0; i < numberOfRows; i++) {
+        for (int i = 0; i < pRow(types)+3; i++) {
 
             List<String> row = new ArrayList<>();
             String res = "";
@@ -257,6 +258,22 @@ public class Main {
         }
 
     }
+    
+    public static int pRow(String[] header){
+        int countStringAndInt = 0;
+        int countInt = 0;
+
+        for (String h : header) {
+            if(h.equalsIgnoreCase("string") ||h.equalsIgnoreCase("int") ){
+                countStringAndInt++;
+            }
+
+            if(h.equalsIgnoreCase("int")) {
+                countInt++;
+            }
+        }
+        return (header.length * 6) + (countStringAndInt + countInt + errorDate.length + errorTimestamp.length);
+    }
 
     public static boolean checkAbnormality(String d) {
         for (String element : types) {
@@ -272,6 +289,8 @@ public class Main {
         }
         return true;
     }
+
+
 
     public static String testNumbers(String len, String row, boolean addAbnormal) {
 
@@ -337,11 +356,19 @@ public class Main {
 
         long startEpochDay = startDate.toEpochDay();
         long endEpochDay = endDate.toEpochDay();
-        long randomEpochDay = ThreadLocalRandom.current().nextLong(startEpochDay, endEpochDay);
 
-        return addDoubleQoutes(LocalDate.ofEpochDay(randomEpochDay).toString());
+        LocalDate randomDate;
+        do{
+        long randomEpochDay = ThreadLocalRandom.current().nextLong(startEpochDay, endEpochDay);
+        randomDate = LocalDate.ofEpochDay(randomEpochDay);
+        }while(isLeapYear(randomDate.getYear()));
+
+        return addDoubleQoutes(randomDate.toString());
     }
 
+    private static boolean isLeapYear(int year) {
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    }
     public static String addDoubleQoutes(String text) {
         return "\"" + text + "\"";
     }
