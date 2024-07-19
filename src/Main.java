@@ -1,375 +1,306 @@
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import controller.*;
+import etc.Qoutes;
 
 public class Main {
-    private List<String> headers;
-    private List<List<String>> rows;
-    private static final String[] nulls = {String.format("\"%s\"", ""), "", "null", "\"null\"", "NULL", "\"NULL\""};
-    private static final String[] errorDate = {"2023-02-29", "2024-xx-24", "06-24-2024", "2024-06-32"};
-    private static final String[] errorTimestamp = {
-            "2023-02-29 12:59:59",
-            "2024-xx-24 12:59:59",
-            "06-24-2024 12:59:59",
-            "2024-06-32 12:59:59",
-            "2024-06-32 12:60:59",
-            "2024-06-32 25:59:59",
-            "2024-06-32 12:59:60"
-    };
+  private List<String> headers;
+  private List<List<String>> rows;
+  private static final String[] nulls = { String.format("\"%s\"", ""), "", "null", "\"null\"", "NULL", "\"NULL\"" };
+  private static final String[] errorDate = { "2023-02-29", "2024-Jun-24", "06-24-2024", "2024-06-32" };
+  private static final String[] errorTimestamp = {
+      "2023-02-29 12:59:59",
+      "2024-Apr-24 12:59:59",
+      "06-24-2024 12:59:59",
+      "2024-06-32 12:59:59",
+      "2024-06-24 12:60:59",
+      "2024-06-24 25:59:59",
+      "2024-06-24 12:59:60"
+  };
 
-    private static String[] types;
-    private static boolean null_check = false;
-    private static boolean length_check = false;
-    private static boolean type_check = false;
-    private static boolean date_check = false;
-    private static boolean time_check = false;
+  private static String[] types;
+  private static boolean null_check = false;
+  private static boolean length_check = false;
+  private static boolean type_check = false;
+  private static boolean date_check = false;
+  private static boolean time_check = false;
 
+  public Main() {
+    headers = new ArrayList<>();
+    rows = new ArrayList<>();
+  }
 
-    public Main() {
-        headers = new ArrayList<>();
-        rows = new ArrayList<>();
+  public void setHeaders(List<String> headers) {
+    this.headers = headers;
+  }
+
+  public void addRow(List<String> row) {
+    rows.add(row);
+  }
+
+  public void generateCSV(String fileName) throws IOException {
+    try (FileWriter writer = new FileWriter(fileName)) {
+      // Write headers
+      writer.append(String.join(",", headers));
+      writer.append("\n");
+
+      // Write rows
+      for (List<String> row : rows) {
+        writer.append(String.join(",", row));
+        writer.append("\n");
+      }
+    }
+  }
+
+  public static void main(String[] args) {
+    Scanner scanner = new Scanner(System.in);
+    Main generator = new Main();
+
+    System.out.print("Column names separated by comma: ");
+    String[] arrCol = scanner.nextLine().replace("\"", "").split(",");
+    int numCol = arrCol.length;
+
+    System.out.print("Datatypes separated by comma: ");
+    types = scanner.nextLine().split(",");
+
+    System.out.print("Length separated by comma: ");
+    String[] lens = scanner.nextLine().split(",");
+
+    List<String> headers = new ArrayList<>();
+    for (String cols : arrCol) {
+      headers.add(cols);
     }
 
-    public void setHeaders(List<String> headers) {
-        this.headers = headers;
-    }
+    generator.setHeaders(headers);
 
-    public void addRow(List<String> row) {
-        rows.add(row);
-    }
+    // do not delete for now
+    // System.out.print("Enter the number of rows: ");
+    // int numberOfRows = scanner.nextInt();
+    // scanner.nextLine(); // Consume the newline
 
-    public void generateCSV(String fileName) throws IOException {
-        try (FileWriter writer = new FileWriter(fileName)) {
-            // Write headers
-            writer.append(String.join(",", headers));
-            writer.append("\n");
+    int nullCount = 0;
+    int dateCount = 0;
+    int timeCount = 0;
 
-            // Write rows
-            for (List<String> row : rows) {
-                writer.append(String.join(",", row));
-                writer.append("\n");
-            }
-        }
-    }
+    boolean isNulling = false;
+    boolean isMaxing = false;
+    boolean isType = false;
 
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        Main generator = new Main();
+    // rows
+    for (int i = 0; i < pRow(types) + 3; i++) {
 
-        System.out.print("Column names separated by comma: ");
-        String[] arrCol = scanner.nextLine().replace("\"", "").split(",");
-        int numCol = arrCol.length;
+      List<String> row = new ArrayList<>();
+      String res = "";
 
-        System.out.print("Datatypes separated by comma: ");
-        types = scanner.nextLine().split(",");
+      // columns
+      for (int j = 0; j < numCol; j++) {
+        switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "").replace("+d", "")) {
+          case "varchar":
+            Syllabary sylla = new Syllabary();
 
-        System.out.print("Length separated by comma: ");
-        String[] lens = scanner.nextLine().split(",");
-
-        List<String> headers = new ArrayList<>();
-        for (String cols : arrCol) {
-            headers.add(cols);
-        }
-
-        generator.setHeaders(headers);
-
-        //do not delete for now
-        // System.out.print("Enter the number of rows: ");
-        // int numberOfRows = scanner.nextInt();
-        // scanner.nextLine();  // Consume the newline
-
-        int nullCount = 0;
-        int dateCount = 0;
-        int timeCount = 0;
-
-        boolean isNulling = false;
-        boolean isMaxing = false;
-        boolean isType = false;
-
-        for (int i = 0; i < pRow(types)+3; i++) {
-
-            List<String> row = new ArrayList<>();
-            String res = "";
-
-            for (int j = 0; j < numCol; j++) {
-                switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "").replace("+d", "")) {
-                    case "string":
-                        if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
-                            row.add(nulls[nullCount]);
-                            isNulling = true;
-                        } else if (nullCount > 5 && !types[j].contains("+n")) {
-                            nullCount = 0;
-                            types[j] = types[j] + "+n";
-                            isNulling = false;
-                            row.add(randomString(Integer.parseInt(lens[j]), true, false));
-                        } else {
-                            if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
-                                types[j] = types[j] + "+o";
-                                isMaxing = true;
-                                row.add(randomString(Integer.parseInt(lens[j]) + 1, true, false));
-                            } else {
-                                row.add(randomString(Integer.parseInt(lens[j]), true, false));
-                            }
-                        }
-                        break;
-                    case "int":
-                        if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
-                            row.add(nulls[nullCount]);
-                            isNulling = true;
-                        } else if (nullCount > 5 && !types[j].contains("+n")) {
-                            nullCount = 0;
-                            types[j] = types[j] + "+n";
-                            isNulling = false;
-                            res = testNumbers(lens[j], String.valueOf(i), false);
-                            res += i;
-                            row.add(addDoubleQoutes(res));
-                            res = "";
-                        } else {
-                            if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
-                                int len = Integer.parseInt(lens[j]) + 1;
-                                res = testNumbers(String.valueOf(len), String.valueOf(i), false);
-                                res += i;
-                                row.add(addDoubleQoutes(res));
-                                res = "";
-                                isMaxing = true;
-                                types[j] = types[j] + "+o";
-                            } else {
-                                if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
-                                    res = testNumbers(lens[j], String.valueOf(i), true);
-                                    types[j] = types[j] + "+ab";
-                                    isType = true;
-                                } else {
-                                    res = testNumbers(lens[j], String.valueOf(i), false);
-                                }
-                                res += i;
-                                row.add(addDoubleQoutes(res));
-                                res = "";
-                            }
-                        }
-                        break;
-                    case "date":
-                        if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
-                            row.add(nulls[nullCount]);
-                            isNulling = true;
-                        } else if (nullCount > 5 && !types[j].contains("+n")) {
-                            nullCount = 0;
-                            types[j] = types[j] + "+n";
-                            isNulling = false;
-                            row.add(randomDate());
-                        } else {
-                            if(null_check && length_check && type_check && dateCount < errorDate.length){
-                                row.add(addDoubleQoutes(errorDate[dateCount]));
-                                dateCount++;
-                            } else{
-                                row.add(randomDate());
-                            }
-
-                             if(dateCount > errorDate.length - 1 && date_check == false){
-                                    types[j] = types[j] + "+d";
-                            }
-                            
-                        }
-                        break;
-                    case "timestamp":
-                        if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
-                            row.add(nulls[nullCount]);
-                            isNulling = true;
-                        } else if (nullCount > 5 && !types[j].contains("+n")) {
-                            nullCount = 0;
-                            types[j] = types[j] + "+n";
-                            isNulling = false;
-                            row.add(randomDateTime());
-                        } else {
-                            if(null_check && length_check && type_check && date_check && timeCount < errorTimestamp.length){
-                                row.add(addDoubleQoutes(errorTimestamp[timeCount]));
-                                timeCount++;
-                            }else 
-                            row.add(randomDateTime());
-                        }
-                        break;
-                }
-            }
-
-            nullCount++;
-            isNulling = false;
-            isMaxing = false;
-            isType = false;
-            checking();
-            generator.addRow(row);
-
-
-        }
-
-        System.out.print("Enter the file name to save the CSV: ");
-        String fileName = scanner.nextLine();
-
-        try {
-            generator.generateCSV(fileName);
-            System.out.println("CSV file generated successfully: " + fileName);
-        } catch (IOException e) {
-            System.out.println("Error writing to file: " + e.getMessage());
-        }
-        System.out.println(null_check+": null");
-        System.out.println(type_check+": type");
-        System.out.println(date_check+": date");
-        System.out.println(length_check+": len");
-        for(String s : types){
-            System.out.println(s);
-        }
-        scanner.close();
-    }
-
-    public static void checking(){
-        
-        if(Arrays.stream(types).allMatch(s -> s.contains("+n"))){
-            null_check = true;
-        } 
-
-        boolean containsStringOrInt = Arrays.stream(types)
-        .anyMatch(s -> s.contains("string") || s.contains("int"));
-
-        if (containsStringOrInt) {
-            boolean allStringAndIntContainO = Arrays.stream(types)
-                    .filter(s -> s.contains("string") || s.contains("int"))
-                    .allMatch(s -> s.contains("+o"));
-
-            if (allStringAndIntContainO) {
-                length_check = true;
-            }
-        }
-
-        if(Arrays.stream(types).anyMatch(s -> s.contains("int")) && Arrays.stream(types)
-                .filter(s -> s.contains("int"))
-                .allMatch(s -> s.contains("+ab"))){
-            type_check = true;
-        } else if (Arrays.stream(types)
-        .noneMatch(s -> s.contains("int"))){
-            type_check = true;
-        }
-
-        if(Arrays.stream(types).anyMatch(s -> s.contains("date")) && Arrays.stream(types)
-        .filter(s -> s.contains("date"))
-        .allMatch(s -> s.contains("+d"))){
-            date_check = true;
-        }
-
-    }
-    
-    public static int pRow(String[] header){
-        int countStringAndInt = 0;
-        int countInt = 0;
-
-        for (String h : header) {
-            if(h.equalsIgnoreCase("string") ||h.equalsIgnoreCase("int") ){
-                countStringAndInt++;
-            }
-
-            if(h.equalsIgnoreCase("int")) {
-                countInt++;
-            }
-        }
-        return (header.length * 6) + (countStringAndInt + countInt + errorDate.length + errorTimestamp.length);
-    }
-
-    public static boolean checkAbnormality(String d) {
-        for (String element : types) {
-            if (element.contains("date")) {
-                continue;
-            }
-            if (element.contains("timestamp")) {
-                continue;
-            }
-            if (!element.contains(d)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-
-    public static String testNumbers(String len, String row, boolean addAbnormal) {
-
-        int range = Integer.parseInt(len);
-        StringBuilder res = new StringBuilder();
-
-        for (int j = 0; j < range - row.length(); j++) {
-            if (j == 0) {
-                res.append("9");
-            } else if (addAbnormal) {
-                res.append("x");
+            if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+              row.add(nulls[nullCount]);
+              isNulling = true;
+            } else if (nullCount > 5 && !types[j].contains("+n")) {
+              nullCount = 0;
+              types[j] = types[j] + "+n";
+              isNulling = false;
+              sylla.setSyllabary(Integer.parseInt(lens[j]), true, false);
+              row.add(sylla.getSyllabary());
             } else {
-                res.append("0");
+              if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                types[j] = types[j] + "+o";
+                isMaxing = true;
+                sylla.setSyllabary(Integer.parseInt(lens[j]) + 1, true, false);
+                row.add(sylla.getSyllabary());
+              } else {
+                sylla.setSyllabary(Integer.parseInt(lens[j]), true, false);
+                row.add(sylla.getSyllabary());
+              }
             }
-        }
-        return res.toString();
-    }
+            break;
+          case "int":
+            Numeric num = new Numeric();
 
-    public static String randomString(int len, boolean isLetter, boolean isNumber) {
-        StringBuilder sb = new StringBuilder();
-        int start = (int) Math.pow(10, len - 1) + 1;
-        int cnt = 1;
+            if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+              row.add(nulls[nullCount]);
+              isNulling = true;
+            } else if (nullCount > 5 && !types[j].contains("+n")) {
+              nullCount = 0;
+              types[j] = types[j] + "+n";
+              isNulling = false;
+              num.setNumeric(lens[j], String.valueOf(i), false);
+              res = num.getNumeric();
+              res += i;
+              Qoutes qouted = new Qoutes(res);
+              row.add(qouted.getQouted());
+              res = "";
+            } else {
+              if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                int len = Integer.parseInt(lens[j]) + 1;
+                num.setNumeric(String.valueOf(len), String.valueOf(i), false);
+                res = num.getNumeric();
+                res += i;
 
-        if (isLetter) {
-            for (int i = 0; i < len; i++) {
-                String cell = "";
-                if (cnt < 10) {
-                    cell += "x";
-                    cnt++;
+                Qoutes q = new Qoutes(res);
+                row.add(q.getQouted());
+                res = "";
+                isMaxing = true;
+                types[j] = types[j] + "+o";
+              } else {
+                if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
+
+                  num.setNumeric(lens[j], String.valueOf(i), true);
+                  res = num.getNumeric();
+
+                  types[j] = types[j] + "+ab";
+                  isType = true;
                 } else {
-                    cell += "X";
-                    cnt = 1;
+                  num.setNumeric(lens[j], String.valueOf(i), false);
+                  res = num.getNumeric();
                 }
-                sb.append(cell);
+                res += i;
+                Qoutes q = new Qoutes(res);
+                row.add(q.getQouted());
+                res = "";
+              }
             }
-        } else if (isNumber) {
-            for (int i = start; i < start + 3; i++) {
-                sb.append(i);
+            break;
+          case "date":
+            Dates date = new Dates();
+
+            if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+              row.add(nulls[nullCount]);
+              isNulling = true;
+            } else if (nullCount > 5 && !types[j].contains("+n")) {
+              nullCount = 0;
+              types[j] = types[j] + "+n";
+              isNulling = false;
+              row.add(date.getDate());
+            } else {
+              if (null_check && length_check && type_check && dateCount < errorDate.length) {
+                Qoutes q = new Qoutes(errorDate[dateCount]);
+                row.add(q.getQouted());
+                dateCount++;
+              } else {
+                row.add(date.getDate());
+              }
+
+              if (dateCount > errorDate.length - 1 && date_check == false) {
+                types[j] = types[j] + "+d";
+              }
+
             }
+            break;
+          case "timestamp":
+            Datetime datetime = new Datetime();
+
+            if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+              row.add(nulls[nullCount]);
+              isNulling = true;
+            } else if (nullCount > 5 && !types[j].contains("+n")) {
+              nullCount = 0;
+              types[j] = types[j] + "+n";
+              isNulling = false;
+              row.add(datetime.getDatetime());
+            } else {
+              if (null_check && length_check && type_check && date_check && timeCount < errorTimestamp.length) {
+                Qoutes qouted = new Qoutes(errorTimestamp[timeCount]);
+                row.add(qouted.getQouted());
+                timeCount++;
+              } else
+                row.add(datetime.getDatetime());
+            }
+            break;
         }
-        return addDoubleQoutes(sb.toString());
+      }
+
+      nullCount++;
+      isNulling = false;
+      isMaxing = false;
+      isType = false;
+      checking();
+      generator.addRow(row);
+
     }
 
-    public static String randomDateTime() {
-        LocalDateTime startDateTime = LocalDateTime.of(1980, 1, 1, 0, 0);
-        LocalDateTime endDateTime = LocalDateTime.of(2024, 12, 31, 23, 59, 59, 999_999_999);
+    System.out.print("Enter the file name to save the CSV: ");
+    String fileName = scanner.nextLine();
 
-        long startEpochSecond = startDateTime.toEpochSecond(ZoneOffset.UTC);
-        long endEpochSecond = endDateTime.toEpochSecond(ZoneOffset.UTC);
-        long randomEpochSecond = ThreadLocalRandom.current().nextLong(startEpochSecond, endEpochSecond);
+    try {
+      generator.generateCSV(fileName);
+      System.out.println("CSV file generated successfully: " + fileName);
+    } catch (IOException e) {
+      System.out.println("Error writing to file: " + e.getMessage());
+    }
+    scanner.close();
+  }
 
-        int startNano = startDateTime.getNano();
-        int endNano = endDateTime.getNano();
-        int randomNano = ThreadLocalRandom.current().nextInt(startNano, endNano + 1);
+  public static void checking() {
 
-        String timestamp = LocalDateTime.ofEpochSecond(randomEpochSecond, randomNano, ZoneOffset.UTC).toString();
-        return addDoubleQoutes(timestamp.replace("T", " "));
+    if (Arrays.stream(types).allMatch(s -> s.contains("+n"))) {
+      null_check = true;
     }
 
-    public static String randomDate() {
-        LocalDate startDate = LocalDate.of(1980, 1, 1);
-        LocalDate endDate = LocalDate.of(2024, 12, 31);
+    boolean containsStringOrInt = Arrays.stream(types)
+        .anyMatch(s -> s.contains("varchar") || s.contains("int"));
 
-        long startEpochDay = startDate.toEpochDay();
-        long endEpochDay = endDate.toEpochDay();
+    if (containsStringOrInt) {
+      boolean allStringAndIntContainO = Arrays.stream(types)
+          .filter(s -> s.contains("varchar") || s.contains("int"))
+          .allMatch(s -> s.contains("+o"));
 
-        LocalDate randomDate;
-        do{
-        long randomEpochDay = ThreadLocalRandom.current().nextLong(startEpochDay, endEpochDay);
-        randomDate = LocalDate.ofEpochDay(randomEpochDay);
-        }while(isLeapYear(randomDate.getYear()));
-
-        return addDoubleQoutes(randomDate.toString());
+      if (allStringAndIntContainO) {
+        length_check = true;
+      }
     }
 
-    private static boolean isLeapYear(int year) {
-        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    if (Arrays.stream(types).anyMatch(s -> s.contains("int")) && Arrays.stream(types)
+        .filter(s -> s.contains("int"))
+        .allMatch(s -> s.contains("+ab"))) {
+      type_check = true;
+    } else if (Arrays.stream(types)
+        .noneMatch(s -> s.contains("int"))) {
+      type_check = true;
     }
-    public static String addDoubleQoutes(String text) {
-        return "\"" + text + "\"";
+
+    if (Arrays.stream(types).anyMatch(s -> s.contains("date")) && Arrays.stream(types)
+        .filter(s -> s.contains("date"))
+        .allMatch(s -> s.contains("+d"))) {
+      date_check = true;
     }
+
+  }
+
+  public static int pRow(String[] header) {
+    int countStringAndInt = 0;
+    int countInt = 0;
+
+    for (String h : header) {
+      if (h.equalsIgnoreCase("varchar") || h.equalsIgnoreCase("int")) {
+        countStringAndInt++;
+      }
+
+      if (h.equalsIgnoreCase("int")) {
+        countInt++;
+      }
+    }
+    return (header.length * 6) + (countStringAndInt + countInt + errorDate.length + errorTimestamp.length);
+  }
+
+  public static boolean checkAbnormality(String d) {
+    for (String element : types) {
+      if (element.contains("date")) {
+        continue;
+      }
+      if (element.contains("timestamp")) {
+        continue;
+      }
+      if (!element.contains(d)) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
