@@ -1,5 +1,9 @@
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import controller.*;
 import etc.Qoutes;
@@ -40,7 +44,11 @@ public class Main {
   }
 
   public void generateCSV(String fileName) throws IOException {
-    try (FileWriter writer = new FileWriter(fileName)) {
+    try (FileOutputStream fos = new FileOutputStream(fileName);
+     OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+         BufferedWriter writer = new BufferedWriter(osw)) {
+
+            writer.write('\uFEFF');
       // Write headers
       writer.append(String.join(",", headers));
       writer.append("\n");
@@ -226,7 +234,7 @@ public class Main {
     }
 
     System.out.print("Enter the file name to save the CSV: ");
-    String fileName = scanner.nextLine();
+    String fileName = scanner.nextLine()+".csv";
 
     try {
       generator.generateCSV(fileName);
