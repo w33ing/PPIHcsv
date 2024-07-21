@@ -1,6 +1,5 @@
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -94,19 +93,20 @@ public class Main {
     boolean isNulling = false;
     boolean isMaxing = false;
     boolean isType = false;
+    int rowCount = pRow(types);
+    Numeric num = new Numeric();
+    Syllabary sylla = new Syllabary();
 
     // rows
-    for (int i = 0; i < pRow(types) + 3; i++) {
-
+    for (int i = 0; i < rowCount; i++) {
       List<String> row = new ArrayList<>();
       String res = "";
 
       // columns
       for (int j = 0; j < numCol; j++) {
+       
         switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "").replace("+d", "")) {
           case "varchar":
-            Syllabary sylla = new Syllabary();
-
             if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
               row.add(nulls[nullCount]);
               isNulling = true;
@@ -129,8 +129,6 @@ public class Main {
             }
             break;
           case "int":
-            Numeric num = new Numeric();
-
             if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
               row.add(nulls[nullCount]);
               isNulling = true;
@@ -175,6 +173,69 @@ public class Main {
               }
             }
             break;
+          case "decimal":
+          Fraction frac = new Fraction();
+          String[] size = lens[j].split("\\.");
+
+          if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+            row.add(nulls[nullCount]);
+            isNulling = true;
+          } else if (nullCount > 5 && !types[j].contains("+n")) {
+            nullCount = 0;
+            types[j] = types[j] + "+n";
+            isNulling = false;
+            num.setNumeric(size[0], String.valueOf(i), false);
+            frac.setDecimal(size[1], String.valueOf(i), false);
+            res = num.getNumeric();
+            res += i;
+            res += "."+frac.getDecimal();
+            res += i;
+            Qoutes qouted = new Qoutes(res);
+            row.add(qouted.getQouted());
+            res = "";
+          } else {
+            if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+              int len = Integer.parseInt(size[0]) + 1;
+              int scale = Integer.parseInt(size[1])+1;
+              frac.setDecimal(String.valueOf(scale), String.valueOf(i), false);
+              num.setNumeric(String.valueOf(len), String.valueOf(i), false);
+              res = num.getNumeric();
+              res += i;
+              res += "."+frac.getDecimal();
+              res += i;
+
+              Qoutes q = new Qoutes(res);
+              row.add(q.getQouted());
+              res = "";
+              isMaxing = true;
+              types[j] = types[j] + "+o";
+            } else {
+              if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
+
+                
+                num.setNumeric(size[0], String.valueOf(i), true);
+                frac.setDecimal(size[1], String.valueOf(i), true);
+                res = num.getNumeric();
+              res += i;
+              res += "."+frac.getDecimal();
+              res += i;
+                types[j] = types[j] + "+ab";
+                isType = true;
+              } else {
+                num.setNumeric(size[0], String.valueOf(i), false);
+                frac.setDecimal(size[1], String.valueOf(i), false);
+                res = num.getNumeric();
+                res += i;
+                res += "."+frac.getDecimal();
+                res += i;
+              }
+              // res += i;
+              Qoutes q = new Qoutes(res);
+              row.add(q.getQouted());
+              res = "";
+            }
+          }
+          break;
           case "date":
             Dates date = new Dates();
 
@@ -230,9 +291,8 @@ public class Main {
       isType = false;
       checking();
       generator.addRow(row);
-
+      System.out.println("num: "+i);
     }
-
     System.out.print("Enter the file name to save the CSV: ");
     String fileName = scanner.nextLine()+".csv";
 
@@ -241,6 +301,14 @@ public class Main {
       System.out.println("CSV file generated successfully: " + fileName);
     } catch (IOException e) {
       System.out.println("Error writing to file: " + e.getMessage());
+    }
+
+    System.out.println("null: "+null_check);
+    System.out.println("length: "+length_check);
+    System.out.println("type: "+type_check);
+    System.out.println("date: "+date_check);
+    for (String string : types) {
+      System.out.println(string);
     }
     scanner.close();
   }
@@ -279,25 +347,41 @@ public class Main {
       date_check = true;
     }
 
+    if (!Arrays.stream(types).anyMatch(s->s.contains("date"))) {
+      date_check = true;
+    }
+
   }
 
-  public static int pRow(String[] header) {
-    int countStringAndInt = 0;
+  private static int pRow(String[] header) {
+    int countStringAndIntAndDecimal = 0;
     int countInt = 0;
+    int countDate = 0;
+    int countTime = 0;
+    int countDecimal = 0;
 
     for (String h : header) {
-      if (h.equalsIgnoreCase("varchar") || h.equalsIgnoreCase("int")) {
-        countStringAndInt++;
+      if (h.equalsIgnoreCase("varchar") || h.equalsIgnoreCase("int") || h.equalsIgnoreCase("decimal")) {
+        countStringAndIntAndDecimal++;
       }
 
       if (h.equalsIgnoreCase("int")) {
         countInt++;
       }
+      if(h.equalsIgnoreCase("decimal")){
+        countDecimal++;
+      }
+      if(h.equalsIgnoreCase("date")){
+        countDate = errorDate.length;
+      }
+      if(h.equalsIgnoreCase("timestamp")){
+        countTime = errorTimestamp.length;
+      }
     }
-    return (header.length * 6) + (countStringAndInt + countInt + errorDate.length + errorTimestamp.length);
+    return (header.length * 6) + (countStringAndIntAndDecimal + countInt + countDate + countTime + countDecimal);
   }
 
-  public static boolean checkAbnormality(String d) {
+  private static boolean checkAbnormality(String d) {
     for (String element : types) {
       if (element.contains("date")) {
         continue;

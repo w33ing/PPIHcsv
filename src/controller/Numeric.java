@@ -11,7 +11,6 @@ public class Numeric {
     this.row = row;
     this.addAbnormal = addAbnormal;
   }
-
   public String getNumeric() {
     int range = this.len;
     StringBuilder res = new StringBuilder();
