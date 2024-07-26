@@ -8,8 +8,6 @@ import java.util.*;
 import Model.donkiModel;
 import controller.*;
 import etc.Qoutes;
-import java.io.BufferedReader;
-import java.io.FileReader;
 
 public class Main {
   private List<String> headers;
@@ -65,56 +63,24 @@ public class Main {
   }
 
   public static void main(String[] args) {
-    // // get the all table in source file and store it in csv file
-    // Transposed transposed = new Transposed(824, 833, 1, 3);
-    // String outputFile = "source/transposed.csv";
-
-    // try (FileOutputStream fos = new FileOutputStream(outputFile);
-    // OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-    // BufferedWriter writer = new BufferedWriter(osw)) {
-    // for (List<String> row : transposed.getTransposed()) {
-    // writer.write('\uFEFF');
-    // writer.write(String.join(",", row));
-    // writer.write("\n");
-    // }
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // }
-
-    mappingSourceTable map = new mappingSourceTable("価格判定データ");
-
-    List<String> sourceTableToMap = map.getFilteredMapping();
-
     Scanner scanner = new Scanner(System.in);
     Main generator = new Main();
 
-    // System.out.print("Column names separated by comma: ");
-    // String col = "";
+    
+    //価格判定データ
+   
+
+    System.out.print("Enter table name: ");
+    String table = scanner.nextLine();
+
+    mappingSourceTable map = new mappingSourceTable(table);
+    donkiTableSearch don = new donkiTableSearch(table);
+
+    List<String> sourceTableToMap = map.getFilteredMapping();
     List<String> col = new ArrayList<>();
-
-    // String[] arrCol = scanner.nextLine().replace("\"", "").split(",");
-    // int numCol = arrCol.length;
-
-    // System.out.print("Datatypes separated by comma: ");
-    // String datatype = "";
     List<String> datatype = new ArrayList<>();
-
-    // types = datatype.split(",");
-    // types = scanner.nextLine().split(",");
-
-    // System.out.print("Length separated by comma: ");
-    // String stringLength = "";
     List<String> stringLength = new ArrayList<>();
-
-    // String[] lens = stringLength.split(",");
-    // String[] lens = scanner.nextLine().split(",");
-
-    // String file = "source/transposed.csv";
-    // int startRow = 0; // Change this to the starting row number (1-based index)
-    // int endRow = 4; // Change this to the ending row number (1-based index)
-    // String line;
-    // int currentRow = 0;
-    donkiTableSearch don = new donkiTableSearch("価格判定データ");
+    
     List<donkiModel> dons = don.getDonkiTable();
 
     for (donkiModel d : don.getDonkiTable()) {
@@ -127,31 +93,7 @@ public class Main {
     String datatypes = String.join(",", datatype);
     String stringLengths = String.join(",", stringLength);
 
-    // try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-    // while ((line = br.readLine()) != null) {
-    // if (currentRow >= startRow && currentRow <= endRow) {
-    // if (currentRow == 0) {
-    // cols = line;
-    // } else if (currentRow == 1) {
-    // datatypes = line;
-    // } else if (currentRow == 2) {
-    // stringLengths = line;
-    // }
-
-    // // System.out.println(line);
-    // }
-    // currentRow++;
-    // if (currentRow > endRow) {
-    // break;
-    // }
-    // }
-
-    // if (currentRow < startRow) {
-    // System.out.println("The file has less than " + startRow + " rows.");
-    // }
-    // } catch (Exception e) {
-    // System.out.println(e);
-    // }
+    
 
     String[] column = cols.split(",");
     int numCol = column.length;
@@ -165,11 +107,6 @@ public class Main {
     }
 
     generator.setHeaders(headers);
-
-    // do not delete for now
-    // System.out.print("Enter the number of rows: ");
-    // int numberOfRows = scanner.nextInt();
-    // scanner.nextLine(); // Consume the newline
 
     int nullCount = 0;
     int dateCount = 0;
@@ -491,10 +428,9 @@ public class Main {
       isType = false;
       checking();
       generator.addRow(row);
-      // System.out.println("num: " + i);
     }
-    System.out.print("Enter the file name to save the CSV: ");
-    String fileName = scanner.nextLine() + ".csv";
+
+    String fileName = table + ".csv";
 
     try {
       generator.generateCSV(fileName);
