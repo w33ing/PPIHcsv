@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import Model.donkiModel;
 import controller.*;
 import etc.Qoutes;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 public class Main {
   private List<String> headers;
@@ -44,10 +48,10 @@ public class Main {
 
   public void generateCSV(String fileName) throws IOException {
     try (FileOutputStream fos = new FileOutputStream(fileName);
-     OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-         BufferedWriter writer = new BufferedWriter(osw)) {
+        OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+        BufferedWriter writer = new BufferedWriter(osw)) {
 
-            writer.write('\uFEFF');
+      writer.write('\uFEFF');
       // Write headers
       writer.append(String.join(",", headers));
       writer.append("\n");
@@ -61,22 +65,103 @@ public class Main {
   }
 
   public static void main(String[] args) {
+    // // get the all table in source file and store it in csv file
+    // Transposed transposed = new Transposed(824, 833, 1, 3);
+    // String outputFile = "source/transposed.csv";
+
+    // try (FileOutputStream fos = new FileOutputStream(outputFile);
+    // OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+    // BufferedWriter writer = new BufferedWriter(osw)) {
+    // for (List<String> row : transposed.getTransposed()) {
+    // writer.write('\uFEFF');
+    // writer.write(String.join(",", row));
+    // writer.write("\n");
+    // }
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
+
+    mappingSourceTable map = new mappingSourceTable("価格判定データ");
+
+    List<String> sourceTableToMap = map.getFilteredMapping();
+
     Scanner scanner = new Scanner(System.in);
     Main generator = new Main();
 
-    System.out.print("Column names separated by comma: ");
-    String[] arrCol = scanner.nextLine().replace("\"", "").split(",");
-    int numCol = arrCol.length;
+    // System.out.print("Column names separated by comma: ");
+    // String col = "";
+    List<String> col = new ArrayList<>();
 
-    System.out.print("Datatypes separated by comma: ");
-    types = scanner.nextLine().split(",");
+    // String[] arrCol = scanner.nextLine().replace("\"", "").split(",");
+    // int numCol = arrCol.length;
 
-    System.out.print("Length separated by comma: ");
-    String[] lens = scanner.nextLine().split(",");
+    // System.out.print("Datatypes separated by comma: ");
+    // String datatype = "";
+    List<String> datatype = new ArrayList<>();
+
+    // types = datatype.split(",");
+    // types = scanner.nextLine().split(",");
+
+    // System.out.print("Length separated by comma: ");
+    // String stringLength = "";
+    List<String> stringLength = new ArrayList<>();
+
+    // String[] lens = stringLength.split(",");
+    // String[] lens = scanner.nextLine().split(",");
+
+    // String file = "source/transposed.csv";
+    // int startRow = 0; // Change this to the starting row number (1-based index)
+    // int endRow = 4; // Change this to the ending row number (1-based index)
+    // String line;
+    // int currentRow = 0;
+    donkiTableSearch don = new donkiTableSearch("価格判定データ");
+    List<donkiModel> dons = don.getDonkiTable();
+
+    for (donkiModel d : don.getDonkiTable()) {
+      col.add(d.getColumnName());
+      datatype.add(d.getDatatype());
+      stringLength.add(d.getColumnLength());
+    }
+
+    String cols = String.join(",", col);
+    String datatypes = String.join(",", datatype);
+    String stringLengths = String.join(",", stringLength);
+
+    // try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+    // while ((line = br.readLine()) != null) {
+    // if (currentRow >= startRow && currentRow <= endRow) {
+    // if (currentRow == 0) {
+    // cols = line;
+    // } else if (currentRow == 1) {
+    // datatypes = line;
+    // } else if (currentRow == 2) {
+    // stringLengths = line;
+    // }
+
+    // // System.out.println(line);
+    // }
+    // currentRow++;
+    // if (currentRow > endRow) {
+    // break;
+    // }
+    // }
+
+    // if (currentRow < startRow) {
+    // System.out.println("The file has less than " + startRow + " rows.");
+    // }
+    // } catch (Exception e) {
+    // System.out.println(e);
+    // }
+
+    String[] column = cols.split(",");
+    int numCol = column.length;
+
+    types = datatypes.split(",");
+    String[] lens = stringLengths.split(",");
 
     List<String> headers = new ArrayList<>();
-    for (String cols : arrCol) {
-      headers.add(cols);
+    for (String colss : column) {
+      headers.add(colss);
     }
 
     generator.setHeaders(headers);
@@ -104,7 +189,10 @@ public class Main {
 
       // columns
       for (int j = 0; j < numCol; j++) {
-       
+        if (!sourceTableToMap.contains(column[j])) {
+          row.add("\"0\"");
+          continue;
+        }
         switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "").replace("+d", "")) {
           case "varchar":
             if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
@@ -128,7 +216,7 @@ public class Main {
               }
             }
             break;
-          case "int":
+          case "nvarchar2":
             if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
               row.add(nulls[nullCount]);
               isNulling = true;
@@ -136,17 +224,176 @@ public class Main {
               nullCount = 0;
               types[j] = types[j] + "+n";
               isNulling = false;
-              num.setNumeric(lens[j], String.valueOf(i), false);
+              sylla.setSyllabary(Integer.parseInt(lens[j]), true, false);
+              row.add(sylla.getSyllabary());
+            } else {
+              if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                types[j] = types[j] + "+o";
+                isMaxing = true;
+                sylla.setSyllabary(Integer.parseInt(lens[j]) + 1, true, false);
+                row.add(sylla.getSyllabary());
+              } else {
+                sylla.setSyllabary(Integer.parseInt(lens[j]), true, false);
+                row.add(sylla.getSyllabary());
+              }
+            }
+            break;
+          case "number":
+            if (lens[j].contains(".")) {
+              Fraction frac = new Fraction();
+              String[] size = lens[j].split("\\.");
+
+              if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+                row.add(nulls[nullCount]);
+                isNulling = true;
+              } else if (nullCount > 5 && !types[j].contains("+n")) {
+                nullCount = 0;
+                types[j] = types[j] + "+n";
+                isNulling = false;
+                num.setNumeric(size[0], String.valueOf(i), false);
+                frac.setDecimal(size[1], String.valueOf(i), false);
+                res = num.getNumeric();
+                res += i;
+                if (Integer.parseInt(size[1]) == 0) {
+                  // なし
+                } else {
+                  res += "." + frac.getDecimal();
+                  res += i;
+                }
+                Qoutes qouted = new Qoutes(res);
+                row.add(qouted.getQouted());
+                res = "";
+              } else {
+                if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                  int len = Integer.parseInt(size[0]);
+                  int scale = Integer.parseInt(size[1]) + 1;
+                  frac.setDecimal(String.valueOf(scale), String.valueOf(i), false);
+                  num.setNumeric(String.valueOf(len), String.valueOf(i), false);
+                  res = num.getNumeric();
+                  res += i;
+                  res += "." + frac.getDecimal();
+                  res += i;
+
+                  Qoutes q = new Qoutes(res);
+                  row.add(q.getQouted());
+                  res = "";
+                  isMaxing = true;
+                  types[j] = types[j] + "+o";
+                } else {
+                  if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
+
+                    num.setNumeric(size[0], String.valueOf(i), true);
+                    frac.setDecimal(size[1], String.valueOf(i), true);
+                    res = num.getNumeric();
+                    res += i;
+                    if (Integer.parseInt(size[1]) == 0) {
+                      // なし
+                    } else {
+                      res += "." + frac.getDecimal();
+                      res += i;
+                    }
+                    types[j] = types[j] + "+ab";
+                    isType = true;
+                  } else {
+                    num.setNumeric(size[0], String.valueOf(i), false);
+                    frac.setDecimal(size[1], String.valueOf(i), false);
+                    res = num.getNumeric();
+                    res += i;
+
+                    if (Integer.parseInt(size[1]) == 0) {
+                      // なし
+                    } else {
+                      res += "." + frac.getDecimal();
+                      res += i;
+                    }
+                  }
+                  // res += i;
+                  Qoutes q = new Qoutes(res);
+                  row.add(q.getQouted());
+                  res = "";
+                }
+              }
+            } else {
+
+              if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+                row.add(nulls[nullCount]);
+                isNulling = true;
+              } else if (nullCount > 5 && !types[j].contains("+n")) {
+                nullCount = 0;
+                types[j] = types[j] + "+n";
+                isNulling = false;
+                num.setNumeric(lens[j], String.valueOf(i), false);
+                res = num.getNumeric();
+                res += i;
+                Qoutes qouted = new Qoutes(res);
+                row.add(qouted.getQouted());
+                res = "";
+              } else {
+                if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                  int len = Integer.parseInt(lens[j]) + 1;
+                  num.setNumeric(String.valueOf(len), String.valueOf(i), false);
+                  res = num.getNumeric();
+                  res += i;
+
+                  Qoutes q = new Qoutes(res);
+                  row.add(q.getQouted());
+                  res = "";
+                  isMaxing = true;
+                  types[j] = types[j] + "+o";
+                } else {
+                  if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
+
+                    num.setNumeric(lens[j], String.valueOf(i), true);
+                    res = num.getNumeric();
+
+                    types[j] = types[j] + "+ab";
+                    isType = true;
+                  } else {
+                    num.setNumeric(lens[j], String.valueOf(i), false);
+                    res = num.getNumeric();
+                  }
+                  res += i;
+                  Qoutes q = new Qoutes(res);
+                  row.add(q.getQouted());
+                  res = "";
+                }
+              }
+            }
+
+            break;
+          case "decimal":
+            Fraction frac = new Fraction();
+            String[] size = lens[j].split("\\.");
+
+            if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
+              row.add(nulls[nullCount]);
+              isNulling = true;
+            } else if (nullCount > 5 && !types[j].contains("+n")) {
+              nullCount = 0;
+              types[j] = types[j] + "+n";
+              isNulling = false;
+              num.setNumeric(size[0], String.valueOf(i), false);
+              frac.setDecimal(size[1], String.valueOf(i), false);
               res = num.getNumeric();
               res += i;
+              if (Integer.parseInt(size[1]) == 0) {
+                // なし
+              } else {
+                res += "." + frac.getDecimal();
+                res += i;
+              }
               Qoutes qouted = new Qoutes(res);
               row.add(qouted.getQouted());
               res = "";
             } else {
               if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
-                int len = Integer.parseInt(lens[j]) + 1;
+                int len = Integer.parseInt(size[0]);
+                int scale = Integer.parseInt(size[1]) + 1;
+                frac.setDecimal(String.valueOf(scale), String.valueOf(i), false);
                 num.setNumeric(String.valueOf(len), String.valueOf(i), false);
                 res = num.getNumeric();
+                res += i;
+                res += "." + frac.getDecimal();
                 res += i;
 
                 Qoutes q = new Qoutes(res);
@@ -157,85 +404,38 @@ public class Main {
               } else {
                 if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
 
-                  num.setNumeric(lens[j], String.valueOf(i), true);
+                  num.setNumeric(size[0], String.valueOf(i), true);
+                  frac.setDecimal(size[1], String.valueOf(i), true);
                   res = num.getNumeric();
-
+                  res += i;
+                  if (Integer.parseInt(size[1]) == 0) {
+                    // なし
+                  } else {
+                    res += "." + frac.getDecimal();
+                    res += i;
+                  }
                   types[j] = types[j] + "+ab";
                   isType = true;
                 } else {
-                  num.setNumeric(lens[j], String.valueOf(i), false);
+                  num.setNumeric(size[0], String.valueOf(i), false);
+                  frac.setDecimal(size[1], String.valueOf(i), false);
                   res = num.getNumeric();
+                  res += i;
+
+                  if (Integer.parseInt(size[1]) == 0) {
+                    // なし
+                  } else {
+                    res += "." + frac.getDecimal();
+                    res += i;
+                  }
                 }
-                res += i;
+                // res += i;
                 Qoutes q = new Qoutes(res);
                 row.add(q.getQouted());
                 res = "";
               }
             }
             break;
-          case "decimal":
-          Fraction frac = new Fraction();
-          String[] size = lens[j].split("\\.");
-
-          if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
-            row.add(nulls[nullCount]);
-            isNulling = true;
-          } else if (nullCount > 5 && !types[j].contains("+n")) {
-            nullCount = 0;
-            types[j] = types[j] + "+n";
-            isNulling = false;
-            num.setNumeric(size[0], String.valueOf(i), false);
-            frac.setDecimal(size[1], String.valueOf(i), false);
-            res = num.getNumeric();
-            res += i;
-            res += "."+frac.getDecimal();
-            res += i;
-            Qoutes qouted = new Qoutes(res);
-            row.add(qouted.getQouted());
-            res = "";
-          } else {
-            if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
-              int len = Integer.parseInt(size[0]) + 1;
-              int scale = Integer.parseInt(size[1])+1;
-              frac.setDecimal(String.valueOf(scale), String.valueOf(i), false);
-              num.setNumeric(String.valueOf(len), String.valueOf(i), false);
-              res = num.getNumeric();
-              res += i;
-              res += "."+frac.getDecimal();
-              res += i;
-
-              Qoutes q = new Qoutes(res);
-              row.add(q.getQouted());
-              res = "";
-              isMaxing = true;
-              types[j] = types[j] + "+o";
-            } else {
-              if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
-
-                
-                num.setNumeric(size[0], String.valueOf(i), true);
-                frac.setDecimal(size[1], String.valueOf(i), true);
-                res = num.getNumeric();
-              res += i;
-              res += "."+frac.getDecimal();
-              res += i;
-                types[j] = types[j] + "+ab";
-                isType = true;
-              } else {
-                num.setNumeric(size[0], String.valueOf(i), false);
-                frac.setDecimal(size[1], String.valueOf(i), false);
-                res = num.getNumeric();
-                res += i;
-                res += "."+frac.getDecimal();
-                res += i;
-              }
-              // res += i;
-              Qoutes q = new Qoutes(res);
-              row.add(q.getQouted());
-              res = "";
-            }
-          }
-          break;
           case "date":
             Dates date = new Dates();
 
@@ -291,10 +491,10 @@ public class Main {
       isType = false;
       checking();
       generator.addRow(row);
-      System.out.println("num: "+i);
+      // System.out.println("num: " + i);
     }
     System.out.print("Enter the file name to save the CSV: ");
-    String fileName = scanner.nextLine()+".csv";
+    String fileName = scanner.nextLine() + ".csv";
 
     try {
       generator.generateCSV(fileName);
@@ -302,15 +502,8 @@ public class Main {
     } catch (IOException e) {
       System.out.println("Error writing to file: " + e.getMessage());
     }
-
-    System.out.println("null: "+null_check);
-    System.out.println("length: "+length_check);
-    System.out.println("type: "+type_check);
-    System.out.println("date: "+date_check);
-    for (String string : types) {
-      System.out.println(string);
-    }
     scanner.close();
+
   }
 
   public static void checking() {
@@ -347,7 +540,7 @@ public class Main {
       date_check = true;
     }
 
-    if (!Arrays.stream(types).anyMatch(s->s.contains("date"))) {
+    if (!Arrays.stream(types).anyMatch(s -> s.contains("date"))) {
       date_check = true;
     }
 
@@ -361,20 +554,21 @@ public class Main {
     int countDecimal = 0;
 
     for (String h : header) {
-      if (h.equalsIgnoreCase("varchar") || h.equalsIgnoreCase("int") || h.equalsIgnoreCase("decimal")) {
+      if (h.equalsIgnoreCase("varchar") || h.equalsIgnoreCase("int") || h.equalsIgnoreCase("decimal")
+          || h.equalsIgnoreCase("nvarchar2")) {
         countStringAndIntAndDecimal++;
       }
 
       if (h.equalsIgnoreCase("int")) {
         countInt++;
       }
-      if(h.equalsIgnoreCase("decimal")){
+      if (h.equalsIgnoreCase("decimal")) {
         countDecimal++;
       }
-      if(h.equalsIgnoreCase("date")){
+      if (h.equalsIgnoreCase("date")) {
         countDate = errorDate.length;
       }
-      if(h.equalsIgnoreCase("timestamp")){
+      if (h.equalsIgnoreCase("timestamp")) {
         countTime = errorTimestamp.length;
       }
     }
