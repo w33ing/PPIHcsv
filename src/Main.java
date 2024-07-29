@@ -25,6 +25,7 @@ public class Main {
   };
 
   private static String[] types;
+  private static String[] requiredDatatypes;
   private static boolean null_check = false;
   private static boolean length_check = false;
   private static boolean type_check = false;
@@ -68,6 +69,7 @@ public class Main {
 
     
     //価格判定データ
+    //パートナーマスタ
    
 
     System.out.print("Enter table name: ");
@@ -93,13 +95,12 @@ public class Main {
     String datatypes = String.join(",", datatype);
     String stringLengths = String.join(",", stringLength);
 
-    
-
     String[] column = cols.split(",");
     int numCol = column.length;
 
     types = datatypes.split(",");
     String[] lens = stringLengths.split(",");
+
 
     List<String> headers = new ArrayList<>();
     for (String colss : column) {
@@ -115,7 +116,19 @@ public class Main {
     boolean isNulling = false;
     boolean isMaxing = false;
     boolean isType = false;
-    int rowCount = pRow(types);
+    boolean isOnDate = false;
+    boolean isOnTime = false;
+    List<String> numberOfColumns = new ArrayList<>();
+      for(int i = 0; i < numCol; i++){
+        if(sourceTableToMap.contains(column[i])){
+            numberOfColumns.add(types[i]);
+          }
+          else types[i] = "--";
+      }
+
+    requiredDatatypes = Arrays.stream(types).filter(s -> !s.equals("--")).toArray(String[]::new);
+
+    int rowCount = pRow(numberOfColumns);
     Numeric num = new Numeric();
     Syllabary sylla = new Syllabary();
 
@@ -130,6 +143,7 @@ public class Main {
           row.add("\"0\"");
           continue;
         }
+
         switch (types[j].toLowerCase().replace("+n", "").replace("+o", "").replace("+ab", "").replace("+d", "")) {
           case "varchar":
             if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
@@ -164,7 +178,7 @@ public class Main {
               sylla.setSyllabary(Integer.parseInt(lens[j]), true, false);
               row.add(sylla.getSyllabary());
             } else {
-              if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+              if (i >= (requiredDatatypes.length * 6) && !types[j].contains("+o") && isMaxing == false) {
                 types[j] = types[j] + "+o";
                 isMaxing = true;
                 sylla.setSyllabary(Integer.parseInt(lens[j]) + 1, true, false);
@@ -201,7 +215,7 @@ public class Main {
                 row.add(qouted.getQouted());
                 res = "";
               } else {
-                if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                if (i >= (requiredDatatypes.length * 6) && !types[j].contains("+o") && isMaxing == false) {
                   int len = Integer.parseInt(size[0]);
                   int scale = Integer.parseInt(size[1]) + 1;
                   frac.setDecimal(String.valueOf(scale), String.valueOf(i), false);
@@ -251,7 +265,8 @@ public class Main {
                 }
               }
             } else {
-
+              //numeric abnormal did not take effect
+              //no decimal
               if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
                 row.add(nulls[nullCount]);
                 isNulling = true;
@@ -261,16 +276,17 @@ public class Main {
                 isNulling = false;
                 num.setNumeric(lens[j], String.valueOf(i), false);
                 res = num.getNumeric();
-                res += i;
+                // res += i;
+
                 Qoutes qouted = new Qoutes(res);
                 row.add(qouted.getQouted());
                 res = "";
               } else {
-                if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
+                if (i >= (requiredDatatypes.length * 6) && !types[j].contains("+o") && isMaxing == false) {
                   int len = Integer.parseInt(lens[j]) + 1;
                   num.setNumeric(String.valueOf(len), String.valueOf(i), false);
                   res = num.getNumeric();
-                  res += i;
+                  // res += i;
 
                   Qoutes q = new Qoutes(res);
                   row.add(q.getQouted());
@@ -289,7 +305,7 @@ public class Main {
                     num.setNumeric(lens[j], String.valueOf(i), false);
                     res = num.getNumeric();
                   }
-                  res += i;
+                  // res += i;
                   Qoutes q = new Qoutes(res);
                   row.add(q.getQouted());
                   res = "";
@@ -297,81 +313,6 @@ public class Main {
               }
             }
 
-            break;
-          case "decimal":
-            Fraction frac = new Fraction();
-            String[] size = lens[j].split("\\.");
-
-            if (nullCount < 6 && !types[j].contains("+n") && isNulling == false) {
-              row.add(nulls[nullCount]);
-              isNulling = true;
-            } else if (nullCount > 5 && !types[j].contains("+n")) {
-              nullCount = 0;
-              types[j] = types[j] + "+n";
-              isNulling = false;
-              num.setNumeric(size[0], String.valueOf(i), false);
-              frac.setDecimal(size[1], String.valueOf(i), false);
-              res = num.getNumeric();
-              res += i;
-              if (Integer.parseInt(size[1]) == 0) {
-                // なし
-              } else {
-                res += "." + frac.getDecimal();
-                res += i;
-              }
-              Qoutes qouted = new Qoutes(res);
-              row.add(qouted.getQouted());
-              res = "";
-            } else {
-              if (i >= numCol * 6 && !types[j].contains("+o") && isMaxing == false) {
-                int len = Integer.parseInt(size[0]);
-                int scale = Integer.parseInt(size[1]) + 1;
-                frac.setDecimal(String.valueOf(scale), String.valueOf(i), false);
-                num.setNumeric(String.valueOf(len), String.valueOf(i), false);
-                res = num.getNumeric();
-                res += i;
-                res += "." + frac.getDecimal();
-                res += i;
-
-                Qoutes q = new Qoutes(res);
-                row.add(q.getQouted());
-                res = "";
-                isMaxing = true;
-                types[j] = types[j] + "+o";
-              } else {
-                if (checkAbnormality("+o") && !types[j].contains("+ab") && isType == false) {
-
-                  num.setNumeric(size[0], String.valueOf(i), true);
-                  frac.setDecimal(size[1], String.valueOf(i), true);
-                  res = num.getNumeric();
-                  res += i;
-                  if (Integer.parseInt(size[1]) == 0) {
-                    // なし
-                  } else {
-                    res += "." + frac.getDecimal();
-                    res += i;
-                  }
-                  types[j] = types[j] + "+ab";
-                  isType = true;
-                } else {
-                  num.setNumeric(size[0], String.valueOf(i), false);
-                  frac.setDecimal(size[1], String.valueOf(i), false);
-                  res = num.getNumeric();
-                  res += i;
-
-                  if (Integer.parseInt(size[1]) == 0) {
-                    // なし
-                  } else {
-                    res += "." + frac.getDecimal();
-                    res += i;
-                  }
-                }
-                // res += i;
-                Qoutes q = new Qoutes(res);
-                row.add(q.getQouted());
-                res = "";
-              }
-            }
             break;
           case "date":
             Dates date = new Dates();
@@ -385,9 +326,10 @@ public class Main {
               isNulling = false;
               row.add(date.getDate());
             } else {
-              if (null_check && length_check && type_check && dateCount < errorDate.length) {
+              if (null_check && length_check && type_check && dateCount < errorDate.length && isOnDate == false && isOnTime == false) {
                 Qoutes q = new Qoutes(errorDate[dateCount]);
                 row.add(q.getQouted());
+                isOnDate = true;
                 dateCount++;
               } else {
                 row.add(date.getDate());
@@ -411,9 +353,10 @@ public class Main {
               isNulling = false;
               row.add(datetime.getDatetime());
             } else {
-              if (null_check && length_check && type_check && date_check && timeCount < errorTimestamp.length) {
+              if (null_check && length_check && type_check && date_check && (timeCount < errorTimestamp.length) && isOnDate == false && isOnTime == false) {
                 Qoutes qouted = new Qoutes(errorTimestamp[timeCount]);
                 row.add(qouted.getQouted());
+                isOnTime = true;
                 timeCount++;
               } else
                 row.add(datetime.getDatetime());
@@ -426,6 +369,8 @@ public class Main {
       isNulling = false;
       isMaxing = false;
       isType = false;
+      isOnDate = false;
+      isOnTime = false;
       checking();
       generator.addRow(row);
     }
@@ -443,17 +388,18 @@ public class Main {
   }
 
   public static void checking() {
+    String[] requiredColumns = Arrays.stream(types).filter(s -> !s.equals("--")).toArray(String[]::new); 
 
-    if (Arrays.stream(types).allMatch(s -> s.contains("+n"))) {
+    if (Arrays.stream(requiredColumns).allMatch(s -> s.contains("+n"))) {
       null_check = true;
     }
 
-    boolean containsStringOrInt = Arrays.stream(types)
-        .anyMatch(s -> s.contains("varchar") || s.contains("int"));
+    boolean containsStringOrInt = Arrays.stream(requiredColumns)
+        .anyMatch(s -> s.contains("nvarchar2") || s.contains("number"));
 
     if (containsStringOrInt) {
-      boolean allStringAndIntContainO = Arrays.stream(types)
-          .filter(s -> s.contains("varchar") || s.contains("int"))
+      boolean allStringAndIntContainO = Arrays.stream(requiredColumns)
+          .filter(s -> s.contains("nvarchar2") || s.contains("number"))
           .allMatch(s -> s.contains("+o"));
 
       if (allStringAndIntContainO) {
@@ -461,58 +407,55 @@ public class Main {
       }
     }
 
-    if (Arrays.stream(types).anyMatch(s -> s.contains("int")) && Arrays.stream(types)
-        .filter(s -> s.contains("int"))
+    if (Arrays.stream(requiredColumns).anyMatch(s -> s.contains("number")) && Arrays.stream(requiredColumns)
+        .filter(s -> s.contains("number"))
         .allMatch(s -> s.contains("+ab"))) {
       type_check = true;
-    } else if (Arrays.stream(types)
-        .noneMatch(s -> s.contains("int"))) {
+    } else if (Arrays.stream(requiredColumns).noneMatch(s -> s.contains("number"))) {
       type_check = true;
     }
 
-    if (Arrays.stream(types).anyMatch(s -> s.contains("date")) && Arrays.stream(types)
+    if (Arrays.stream(requiredColumns).anyMatch(s -> s.contains("date")) && Arrays.stream(requiredColumns)
         .filter(s -> s.contains("date"))
         .allMatch(s -> s.contains("+d"))) {
       date_check = true;
     }
 
-    if (!Arrays.stream(types).anyMatch(s -> s.contains("date"))) {
+    if (!Arrays.stream(requiredColumns).anyMatch(s -> s.contains("date"))) {
       date_check = true;
     }
 
   }
 
-  private static int pRow(String[] header) {
-    int countStringAndIntAndDecimal = 0;
-    int countInt = 0;
+  private static int pRow(List<String> header) {
+    int countVarchar = 0;
+    int countNumber = 0;
     int countDate = 0;
     int countTime = 0;
     int countDecimal = 0;
 
     for (String h : header) {
-      if (h.equalsIgnoreCase("varchar") || h.equalsIgnoreCase("int") || h.equalsIgnoreCase("decimal")
-          || h.equalsIgnoreCase("nvarchar2")) {
-        countStringAndIntAndDecimal++;
+      if (h.equalsIgnoreCase("NVARCHAR2")) {
+        countVarchar++;
       }
 
-      if (h.equalsIgnoreCase("int")) {
-        countInt++;
+      if(h.equalsIgnoreCase("NUMBER")){
+        countNumber++;
       }
-      if (h.equalsIgnoreCase("decimal")) {
-        countDecimal++;
-      }
-      if (h.equalsIgnoreCase("date")) {
+
+      if (h.equalsIgnoreCase("DATE")) {
         countDate = errorDate.length;
       }
-      if (h.equalsIgnoreCase("timestamp")) {
+      if (h.equalsIgnoreCase("TIMESTAMP")) {
         countTime = errorTimestamp.length;
       }
     }
-    return (header.length * 6) + (countStringAndIntAndDecimal + countInt + countDate + countTime + countDecimal);
+    return (header.size() * 6) + (countVarchar + (countNumber * 2) + countDate + countTime);
   }
 
   private static boolean checkAbnormality(String d) {
-    for (String element : types) {
+    String[] arr = Arrays.stream(types).filter(s -> !s.equals("--")).toArray(String[]::new);
+    for (String element : arr) {
       if (element.contains("date")) {
         continue;
       }
